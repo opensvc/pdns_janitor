@@ -2,10 +2,11 @@ module github.com/opensvc/pdns_janitor
 
 go 1.19
 
-replace opensvc.com/opensvc => github.com/cvaroqui/omg v1.0.0-alpha1
+replace opensvc.com/opensvc => github.com/opensvc/om3 v0.0.0-20230207105600-0efaac477793
 
 require (
 	github.com/pkg/errors v0.9.1
+	github.com/rs/zerolog v1.20.0
 	opensvc.com/opensvc v0.0.0-00010101000000-000000000000
 )
 
@@ -43,7 +44,6 @@ require (
 	github.com/opensvc/flock v1.0.3 // indirect
 	github.com/opensvc/locker v1.0.3 // indirect
 	github.com/pelletier/go-toml v1.2.0 // indirect
-	github.com/rs/zerolog v1.20.0 // indirect
 	github.com/sirupsen/logrus v1.7.0 // indirect
 	github.com/spf13/afero v1.1.2 // indirect
 	github.com/spf13/cast v1.3.0 // indirect
