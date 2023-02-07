@@ -4,7 +4,9 @@ This component is responsible for wiping the pdns recursor cache when a cluster 
 
 It is used by the system/svc/dns service, deployed from https://github.com/opensvc/opensvc_templates/tree/main/dns.
 
-Note on the opensvc/pdns_janitor docker image tags:
+Tagged versions are build as 3, 3.x and 3.x.y docker images and pushed to https://hub.docker.com/r/opensvc/pdns_janitor/tags.
 
-* ` <3` tags work with opensvc v2 agents.
-* `>=3` tags work with opensvc v3 agents.
+Note: 
+
+* ` <3` docker image tags work with opensvc v2 agents (not build from this repository).
+* `>=3` docker image tags work with opensvc v3 agents.
