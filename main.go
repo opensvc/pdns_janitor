@@ -10,11 +10,11 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/opensvc/om3/core/client"
+	"github.com/opensvc/om3/core/event"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
-	"opensvc.com/opensvc/core/client"
-	"opensvc.com/opensvc/core/event"
 )
 
 type (
