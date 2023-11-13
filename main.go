@@ -38,7 +38,7 @@ var (
 	evHandlingTimeout = 300 * time.Millisecond
 	logLevel          string
 
-	defaultOSVCSock = "/var/run/lsnr/h2.sock"
+	defaultOSVCSock = "/var/run/lsnr/http.sock"
 	defaultPDNSSock = "/var/run/pdns-recursor/pdns_recursor.controlsocket"
 	defaultLogLevel = "info"
 )
