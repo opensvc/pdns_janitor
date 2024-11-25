@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"path/filepath"
 	"sync/atomic"
 	"time"
 
@@ -109,20 +108,7 @@ func pdnsRedial() error {
 }
 
 func pdnsDial() error {
-	if tempSock == "" {
-		tempSockDir := filepath.Dir(pdnsSock)
-		if f, err := os.CreateTemp(tempSockDir, filepath.Base(pdnsSock)+".cli."); err != nil {
-			return err
-		} else {
-			tempSock = f.Name()
-			f.Close()
-			os.Remove(tempSock)
-		}
-		log.Info().Msgf("client socket created: %s => %s", tempSock, pdnsSock)
-	}
-	laddr := net.UnixAddr{tempSock, "unixgram"}
-	raddr := net.UnixAddr{pdnsSock, "unixgram"}
-	if conn, err := net.DialUnix("unixgram", &laddr, &raddr); err != nil {
+	if conn, err := net.Dial("unix", pdnsSock); err != nil {
 		return err
 	} else {
 		log.Info().Msg("pdns recursor connected")
