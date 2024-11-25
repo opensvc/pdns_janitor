@@ -38,7 +38,7 @@ var (
 	evHandlingTimeout = 300 * time.Millisecond
 	logLevel          string
 
-	defaultOSVCSock = "/var/run/lsnr/http.sock"
+	defaultOSVCSock = "http:///var/run/lsnr/http.sock"
 	defaultPDNSSock = "/var/run/pdns-recursor/pdns_recursor.controlsocket"
 	defaultLogLevel = "info"
 )
@@ -51,7 +51,7 @@ func main() {
 		defaultPDNSSock = s
 	}
 
-	flag.StringVar(&osvcSock, "osvc-sock", defaultOSVCSock, "the unix domain socket of the opensvc agent api")
+	flag.StringVar(&osvcSock, "osvc-sock", defaultOSVCSock, "the unix domain socket of the opensvc agent api (http:///path/to.sock")
 	flag.StringVar(&pdnsSock, "pdns-sock", defaultPDNSSock, "the unix domain socket of the power dns recursor api")
 	flag.StringVar(&logLevel, "log", defaultLogLevel, "the log level (debug, info, warn, error)")
 	flag.DurationVar(&connectInterval, "connect-interval", 2*time.Second, "the interval between socket reconnects")
@@ -144,6 +144,7 @@ func reGetEventReader() (event.ReadCloser, error) {
 func getEventReader() (event.ReadCloser, error) {
 	cli, err := client.New(
 		client.WithURL(osvcSock),
+		client.WithTimeout(0),
 	)
 	if err != nil {
 		return nil, errors.Wrap(err, "new client")
