@@ -3,10 +3,7 @@ package main
 import (
 	"encoding/json"
 	"flag"
-	"fmt"
-	"net"
 	"os"
-	"sync/atomic"
 	"time"
 
 	"github.com/opensvc/om3/core/client"
@@ -29,11 +26,8 @@ var (
 	lastDial           time.Time
 	osvcSock           string
 	pdnsSock           string
-	tempSock           string
 	connectInterval    time.Duration
 
-	pdnsIsConnected   atomic.Bool
-	pdnsConn          net.Conn
 	evHandlingTimeout = 300 * time.Millisecond
 	logLevel          string
 
@@ -69,53 +63,12 @@ func main() {
 		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
 	}
 
-	defer func() {
-		_ = pdnsConn.Close()
-		_ = os.Remove(tempSock)
-	}()
-
 	for {
 		if err := watch(); err != nil {
 			log.Error().Err(err).Msg("watch")
 		}
 		time.Sleep(connectInterval)
 	}
-}
-
-func pdnsRedial() error {
-	minDialTime := lastDial.Add(connectInterval)
-	if time.Now().Before(minDialTime) {
-		time.Sleep(minDialTime.Sub(time.Now()))
-	}
-	lastDial = time.Now()
-	if pdnsConn != nil {
-		if err := pdnsConn.Close(); err != nil {
-			log.Error().Err(err).Msg("redial: pdns connection close")
-		}
-		pdnsConn = nil
-	}
-	if tempSock != "" {
-		if err := os.Remove(tempSock); errors.Is(err, os.ErrExist) {
-			// pass
-		} else if err != nil {
-			log.Error().Err(err).Msg("redial: pdns client socket file remove")
-		}
-	}
-	if err := pdnsDial(); err != nil {
-		return err
-	}
-	return nil
-}
-
-func pdnsDial() error {
-	if conn, err := net.Dial("unix", pdnsSock); err != nil {
-		return err
-	} else {
-		log.Info().Msg("pdns recursor connected")
-		pdnsConn = conn
-		pdnsIsConnected.Store(true)
-	}
-	return nil
 }
 
 func reGetEventReader() (event.ReadCloser, error) {
@@ -191,39 +144,14 @@ func watch() error {
 }
 
 func onEvent(evData zoneRecordEvent) error {
-	msg := fmt.Sprintf("wipe-cache %s", evData.Name)
-	wipe := func() error {
-		deadline := time.Now().Add(evHandlingTimeout)
-		if err := pdnsConn.SetDeadline(deadline); err != nil {
-			return err
-		}
-		log.Info().Msgf(">>> %s", msg)
-		if _, err := pdnsConn.Write([]byte(msg + "\n")); err != nil {
-			return err
-		}
-		var buff [1024]byte
-		n, err := pdnsConn.Read(buff[:])
-		if err != nil {
-			return err
-		}
-		if n > 0 {
-			log.Info().Msgf("<<< %s", string(buff[:n-1]))
-		}
-		return nil
-	}
 	wiper := func() error {
 		for {
-			if !pdnsIsConnected.Load() {
-				if err := pdnsRedial(); err != nil {
-					return err
-				}
-			}
-			err := wipe()
+			err := wipe(evData.Name)
 			switch {
 			case errors.Is(err, os.ErrDeadlineExceeded):
 				log.Error().Err(err).Msg("pdns control socket")
 			case err != nil:
-				pdnsIsConnected.Store(false)
+				log.Error().Err(err).Msg("wipe error")
 			default:
 				return nil
 			}
