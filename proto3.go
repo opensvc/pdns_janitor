@@ -34,8 +34,8 @@ func wipe(name string) error {
 		return err
 	}
 
-	command := []byte("wipe-cache " + name + "\n")
-	log.Printf(">>> %s", command)
+	command := []byte("wipe-cache " + name)
+	log.Printf(">>> %s", string(command))
 
 	if err = writeNativeUIntToConn(conn, uint(len(command))); err != nil {
 		return err
@@ -81,7 +81,7 @@ func wipe(name string) error {
 	}
 
 	// Process data
-	log.Print(string(data))
+	log.Printf("<<< [%d] %s", uint(HostEndianness.Uint32(status)), string(data))
 
 	return nil
 }
