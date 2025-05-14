@@ -147,6 +147,7 @@ func onEvent(evData zoneRecordEvent) error {
 	wiper := func() error {
 		for {
 			err := wipe(evData.Name)
+			// TODO: handle error &&|| debounce on evDataMap
 			switch {
 			case errors.Is(err, os.ErrDeadlineExceeded):
 				log.Error().Err(err).Msg("pdns control socket")

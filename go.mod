@@ -1,11 +1,11 @@
 module github.com/opensvc/pdns_janitor
 
-go 1.21.0
+go 1.23.0
 
-toolchain go1.22.0
+toolchain go1.23.9
 
 require (
-	github.com/opensvc/om3 v0.0.0-20241124082710-e4ef269cf15f
+	github.com/opensvc/om3 v1.0.0-alpha1.0.20250513214807-d0b864fa9ff9
 	github.com/pkg/errors v0.9.1
 	github.com/rs/zerolog v1.20.0
 )
@@ -54,12 +54,12 @@ require (
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasttemplate v1.2.2 // indirect
 	github.com/yookoala/realpath v1.0.0 // indirect
-	golang.org/x/crypto v0.29.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/exp v0.0.0-20230725093048-515e97ebf090 // indirect
-	golang.org/x/net v0.31.0 // indirect
-	golang.org/x/sys v0.27.0 // indirect
-	golang.org/x/term v0.26.0 // indirect
-	golang.org/x/text v0.20.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/term v0.30.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
