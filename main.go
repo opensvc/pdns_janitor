@@ -6,8 +6,8 @@ import (
 	"os"
 	"time"
 
-	"github.com/opensvc/om3/core/client"
-	"github.com/opensvc/om3/core/event"
+	"github.com/opensvc/om3/v3/core/client"
+	"github.com/opensvc/om3/v3/core/event"
 	"github.com/pkg/errors"
 	"github.com/rs/zerolog"
 	"github.com/rs/zerolog/log"
