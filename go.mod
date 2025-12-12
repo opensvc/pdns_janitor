@@ -1,4 +1,4 @@
-module github.com/opensvc/pdns_janitor
+module github.com/opensvc/pdns_janitor/v3
 
 go 1.24.0
 
