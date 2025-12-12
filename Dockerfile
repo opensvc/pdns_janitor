@@ -1,4 +1,4 @@
-FROM golang:1.23 as build
+FROM golang:latest as build
 
 LABEL maintainer="support@opensvc.com"
 LABEL org.opencontainers.image.source="https://github.com/opensvc/pdns_janitor"
