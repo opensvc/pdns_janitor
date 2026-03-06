@@ -29,6 +29,7 @@ var (
 	connectInterval    time.Duration
 
 	evHandlingTimeout = 300 * time.Millisecond
+	watchdogTimeout   = 10 * time.Second
 	logLevel          string
 
 	defaultOSVCSock = "http:///var/run/lsnr/http.sock"
@@ -88,7 +89,7 @@ func getEventReader() (event.ReadCloser, error) {
 	if err != nil {
 		return nil, errors.Wrap(err, "new client")
 	}
-	evReader, err := cli.NewGetEvents().SetFilters([]string{"ZoneRecordUpdated", "ZoneRecordDeleted"}).GetReader()
+	evReader, err := cli.NewGetEvents().SetFilters([]string{"ZoneRecordUpdated", "ZoneRecordDeleted", "WatchDog"}).NewTimeoutReader(watchdogTimeout)
 	if err != nil {
 		return nil, errors.Wrap(err, "new event reader")
 	}
@@ -97,43 +98,68 @@ func getEventReader() (event.ReadCloser, error) {
 
 func watch() error {
 	var (
-		ev     *event.Event
-		evData zoneRecordEvent
+		ev       *event.Event
+		evData   zoneRecordEvent
+		evReader event.ReadCloser
 	)
-
-	evReader, err := getEventReader()
-	if err != nil {
-		return err
-	}
 
 	q := make(chan zoneRecordEvent, 1)
 
 	go func() {
+		var (
+			needWipeAll  bool
+			err, lastErr error
+		)
+
 		for {
 			if evReader != nil {
 				ev, err = evReader.Read()
 			}
 			if evReader == nil || ev == nil || err != nil {
-				log.Error().Err(err).Msg("reader")
+				if (err != nil) && ((lastErr == nil) || (lastErr.Error() != err.Error())) {
+					lastErr = err
+					log.Error().Err(err).Msg("event: read")
+				}
 				if evReader != nil {
 					_ = evReader.Close()
+					if ev == nil {
+						log.Warn().Msg("event: read timeout")
+					}
 				}
 				evReader, err = reGetEventReader()
 				if err != nil {
-					log.Error().Err(err).Msg("reader: re-get event reader")
+					if (lastErr == nil) || (lastErr.Error() != err.Error()) {
+						lastErr = err
+						log.Error().Err(err).Msg("event: new reader")
+					}
+				} else {
+					log.Info().Msg("event: new reader")
 				}
+
+				// now reconnected with the opensvc daemon, we don't know what we missed
+				// during the unconnected period => wipe all to resync
+				needWipeAll = true
+
+				continue
+			}
+			if ev.Kind == "WatchDog" {
 				continue
 			}
 			if err := json.Unmarshal(ev.Data, &evData); err != nil {
-				log.Error().Err(err).Msgf("reader: unmarshal error %s on '%s'", err, ev.Data)
+				log.Error().Err(err).Msgf("event: unmarshal: %s on '%s'", err, ev.Data)
 				continue
 			}
-			q <- evData
+			if needWipeAll {
+				needWipeAll = false
+				q <- zoneRecordEvent{Name: "."}
+			} else {
+				q <- evData
+			}
 		}
 	}()
 	for {
 		ev := <-q
-		if err = onEvent(ev); err != nil {
+		if err := onEvent(ev); err != nil {
 			log.Error().Err(err).Msg("on event")
 		}
 	}
@@ -148,7 +174,6 @@ func onEvent(evData zoneRecordEvent) error {
 		var lastErr error
 		for {
 			err := wipe(evData.Name)
-			// TODO: handle error &&|| debounce on evDataMap
 			switch {
 			case errors.Is(err, os.ErrDeadlineExceeded):
 				log.Error().Err(err).Msg("pdns control socket")
