@@ -145,6 +145,7 @@ func watch() error {
 
 func onEvent(evData zoneRecordEvent) error {
 	wiper := func() error {
+		var lastErr error
 		for {
 			err := wipe(evData.Name)
 			// TODO: handle error &&|| debounce on evDataMap
@@ -152,7 +153,11 @@ func onEvent(evData zoneRecordEvent) error {
 			case errors.Is(err, os.ErrDeadlineExceeded):
 				log.Error().Err(err).Msg("pdns control socket")
 			case err != nil:
-				log.Error().Err(err).Msg("wipe error")
+				if (lastErr == nil) || (err.Error() != lastErr.Error()) {
+					log.Error().Err(err).Msg("wipe error")
+				}
+				lastErr = err
+				time.Sleep(300 * time.Millisecond)
 			default:
 				return nil
 			}
