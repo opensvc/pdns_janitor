@@ -3,14 +3,14 @@ package main
 import (
 	"encoding/json"
 	"flag"
+	"fmt"
+	"log/slog"
 	"os"
 	"time"
 
 	"github.com/opensvc/om3/v3/core/client"
 	"github.com/opensvc/om3/v3/core/event"
 	"github.com/pkg/errors"
-	"github.com/rs/zerolog"
-	"github.com/rs/zerolog/log"
 )
 
 type (
@@ -51,22 +51,22 @@ func main() {
 	flag.DurationVar(&connectInterval, "connect-interval", 2*time.Second, "the interval between socket reconnects")
 	flag.Parse()
 
-	log.Logger = log.Output(zerolog.NewConsoleWriter())
-	zerolog.TimeFieldFormat = zerolog.TimeFormatUnixMs
+	slog.SetDefault(slog.New(slog.NewTextHandler(os.Stderr, nil)))
+
 	switch logLevel {
 	case "debug":
-		zerolog.SetGlobalLevel(zerolog.DebugLevel)
+		slog.SetLogLoggerLevel(slog.LevelDebug)
 	case "info":
-		zerolog.SetGlobalLevel(zerolog.InfoLevel)
+		slog.SetLogLoggerLevel(slog.LevelInfo)
 	case "warn":
-		zerolog.SetGlobalLevel(zerolog.WarnLevel)
+		slog.SetLogLoggerLevel(slog.LevelWarn)
 	case "error":
-		zerolog.SetGlobalLevel(zerolog.ErrorLevel)
+		slog.SetLogLoggerLevel(slog.LevelError)
 	}
 
 	for {
 		if err := watch(); err != nil {
-			log.Error().Err(err).Msg("watch")
+			slog.Error(fmt.Sprintf("watch: %s"))
 		}
 		time.Sleep(connectInterval)
 	}
@@ -118,22 +118,22 @@ func watch() error {
 			if evReader == nil || ev == nil || err != nil {
 				if (err != nil) && ((lastErr == nil) || (lastErr.Error() != err.Error())) {
 					lastErr = err
-					log.Error().Err(err).Msg("event: read")
+					slog.Error(fmt.Sprintf("event: read: %s", err))
 				}
 				if evReader != nil {
 					_ = evReader.Close()
 					if ev == nil {
-						log.Warn().Msg("event: read timeout")
+						slog.Warn("event: read timeout")
 					}
 				}
 				evReader, err = reGetEventReader()
 				if err != nil {
 					if (lastErr == nil) || (lastErr.Error() != err.Error()) {
 						lastErr = err
-						log.Error().Err(err).Msg("event: new reader")
+						slog.Error(fmt.Sprintf("event: new reader: %s", err))
 					}
 				} else {
-					log.Info().Msg("event: new reader")
+					slog.Info("event: new reader")
 				}
 
 				// now reconnected with the opensvc daemon, we don't know what we missed
@@ -146,7 +146,7 @@ func watch() error {
 				continue
 			}
 			if err := json.Unmarshal(ev.Data, &evData); err != nil {
-				log.Error().Err(err).Msgf("event: unmarshal: %s on '%s'", err, ev.Data)
+				slog.Error(fmt.Sprintf("event: unmarshal: %s on '%s'", err, ev.Data))
 				continue
 			}
 			if needWipeAll {
@@ -160,11 +160,11 @@ func watch() error {
 	for {
 		ev := <-q
 		if err := onEvent(ev); err != nil {
-			log.Error().Err(err).Msg("on event")
+			slog.Error(fmt.Sprintf("on event: %s", err))
 		}
 	}
 	if err := evReader.Close(); err != nil {
-		log.Error().Err(err).Msg("close event reader")
+		slog.Error(fmt.Sprintf("close event reader: %s", err))
 	}
 	return nil
 }
@@ -176,10 +176,10 @@ func onEvent(evData zoneRecordEvent) error {
 			err := wipe(evData.Name)
 			switch {
 			case errors.Is(err, os.ErrDeadlineExceeded):
-				log.Error().Err(err).Msg("pdns control socket")
+				slog.Error(fmt.Sprintf("pdns control socket: %s", err))
 			case err != nil:
 				if (lastErr == nil) || (err.Error() != lastErr.Error()) {
-					log.Error().Err(err).Msg("wipe error")
+					slog.Error(fmt.Sprintf("wipe error: %s", err))
 				}
 				lastErr = err
 				time.Sleep(300 * time.Millisecond)

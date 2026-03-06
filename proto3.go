@@ -5,7 +5,7 @@ package main
 
 import (
 	"fmt"
-	"log"
+	"log/slog"
 	"net"
 	"time"
 )
@@ -35,7 +35,7 @@ func wipe(name string) error {
 	}
 
 	command := []byte("wipe-cache " + name)
-	log.Printf(">>> %s", string(command))
+	slog.Info(fmt.Sprintf(">>> %s", string(command)))
 
 	if err = writeNativeUIntToConn(conn, uint(len(command))); err != nil {
 		return err
@@ -81,7 +81,7 @@ func wipe(name string) error {
 	}
 
 	// Process data
-	log.Printf("<<< [%d] %s", uint(HostEndianness.Uint32(status)), string(data))
+	slog.Info(fmt.Sprintf("<<< [%d] %s", uint(HostEndianness.Uint32(status)), string(data)))
 
 	return nil
 }
