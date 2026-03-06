@@ -130,7 +130,7 @@ func watch() error {
 				if err != nil {
 					if (lastErr == nil) || (lastErr.Error() != err.Error()) {
 						lastErr = err
-						slog.Error(fmt.Sprintf("event: new reader: %s", err))
+						slog.Error(fmt.Sprintf("event: %s", err))
 					}
 				} else {
 					slog.Info("event: new reader")
