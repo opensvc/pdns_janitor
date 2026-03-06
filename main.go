@@ -107,7 +107,6 @@ func watch() error {
 
 	go func() {
 		var (
-			needWipeAll  bool
 			err, lastErr error
 		)
 
@@ -134,11 +133,11 @@ func watch() error {
 					}
 				} else {
 					slog.Info("event: new reader")
-				}
 
-				// now reconnected with the opensvc daemon, we don't know what we missed
-				// during the unconnected period => wipe all to resync
-				needWipeAll = true
+					// now reconnected with the opensvc daemon, we don't know what we missed
+					// during the unconnected period => wipe all to resync
+					q <- zoneRecordEvent{Name: "."}
+				}
 
 				continue
 			}
@@ -149,12 +148,7 @@ func watch() error {
 				slog.Error(fmt.Sprintf("event: unmarshal: %s on '%s'", err, ev.Data))
 				continue
 			}
-			if needWipeAll {
-				needWipeAll = false
-				q <- zoneRecordEvent{Name: "."}
-			} else {
-				q <- evData
-			}
+			q <- evData
 		}
 	}()
 	for {
